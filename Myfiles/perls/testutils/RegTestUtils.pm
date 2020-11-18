@@ -11,7 +11,86 @@ use Data::Difference qw(data_diff);
 
 my $BASELINE = "Baseline";
 my $ACTUAL   = "Actual";
-my $DATAFILE = "data.txt";
+my $DATAFILE = ".txt";
+
+
+sub processArrayAndRemove {
+
+  my $key = $_[0];
+  my $keys = $_[1];
+      
+  my $i;
+  for ($i=0; $i <= $#$keys; $i++) {
+      my $curVal = $keys->[$i];
+      if( ref $curVal eq 'ARRAY') {
+        processArrayAndRemove($key,$curVal);
+      } elsif( ref $curVal eq 'HASH' ) {
+        processHashAndRemove($key,$curVal);
+      }
+  }
+}
+
+
+sub processHashAndRemove {
+  my $key = $_[0];
+  my $object = $_[1];
+
+  foreach my $objKey (keys %$object) {
+      my $curVal = $object->{$objKey};
+      if($key eq $objKey ) {
+         delete $object->{$objKey};
+      }
+      elsif( ref $curVal eq 'ARRAY') {
+        processArrayAndRemove($key,$curVal);
+      } elsif( ref $curVal eq 'HASH' ) {
+        processHashAndRemove($key,$curVal);
+      } else {
+         if( $key eq $objKey)  {
+             delete $object->{$objKey};
+         }
+      }
+  }
+
+
+}
+
+
+
+
+sub removeKeys {
+  my $key = $_[0];
+  my $object = $_[1];
+
+  foreach my $objKey (keys %$object) {
+      my $curVal = $object->{$objKey};
+      if($key eq $objKey) {
+          delete $object->{$key};
+      }
+      elsif( ref $curVal eq 'ARRAY') {
+        processArrayAndRemove($key,$curVal);
+      } elsif( ref $curVal eq 'HASH' ) {
+        processHashAndRemove($key,$curVal);
+      } else {
+         if($key eq $objKey ) {
+             delete $object->{$key};
+         }
+      }
+  }
+
+}
+
+sub removeIgnorableKeys {
+  my $keys    =   $_[0];
+  my $object  =   $_[1];
+  
+  my $i;
+  for ($i=0; $i <= $#$keys; $i++) {
+      my $currKey = $keys->[$i];
+      removeKeys($currKey, $object);
+  }
+
+}
+
 
 
 sub ReadFile {
@@ -27,23 +106,43 @@ sub ReadFile {
    return $fileContent;
 }	
 
+
+sub convertJson2PerlObject{
+    my $content = $_[0];
+    my $convertedData = decode_json($content);
+    return $convertedData;
+
+}
+
 sub CompareResults {
    my $currModulePath = $_[0];
-   my $baseLineFile = $currModulePath."/".$BASELINE."/".$DATAFILE;
-   my $actualFile = $currModulePath."/".$ACTUAL."/".$DATAFILE;
-
+   my $testcasename = $_[1];
+   my $arrayRef = $_[2];
+   my $baseLineFile = $currModulePath."/".$BASELINE."/".$testcasename.$DATAFILE;
+   my $actualFile = $currModulePath."/".$ACTUAL."/".$testcasename.$DATAFILE;
    my $baselineContent = ReadFile($baseLineFile);
-   my $baselineData = decode_json($baselineContent);
+   my $baselineData = convertJson2PerlObject($baselineContent);
+  ################################################
+  print "\n#########BASELINE DUMP Before ##################\n";
+  print  Dumper($baselineData);
+  print "\n########################################\n";
+
+   removeIgnorableKeys($arrayRef,$baselineData);
    my $identical;
 
 
   my $actualContent=ReadFile($actualFile);
-  my $actualData = decode_json($actualContent);
+  my $actualData = convertJson2PerlObject($actualContent);
+
+
+  removeIgnorableKeys($arrayRef,$actualData);
+
+
 
   ################################################
-  #print "\n#########BASELINE DUMP##################\n";
-  #print  Dumper($baselineData);
-  #print "\n########################################\n";
+  print "\n#########BASELINE DUMP##################\n";
+  print  Dumper($baselineData);
+  print "\n########################################\n";
 
   ################################################
   #print "\n#########ACTUAL DUMP####################\n";
