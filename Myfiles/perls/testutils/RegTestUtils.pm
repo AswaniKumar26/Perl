@@ -16,95 +16,91 @@ my $DATAFILE = ".txt";
 # Process and iterarte Array and see if any array or hash
 # if so iterate them and remove till the actual key is reached.
 sub processArrayAndRemove {
-
-  my $key = $_[0];
-  my $keys = $_[1];
-  my $i;
-  for ($i=0; $i <= $#$keys; $i++) {
-      my $curVal = $keys->[$i];
-      if( ref $curVal eq 'ARRAY') {
-        processArrayAndRemove($key,$curVal);
-      } elsif( ref $curVal eq 'HASH' ) {
-        processHashAndRemove($key,$curVal);
-      }
-  }
-}
+    my $key = $_[0];
+    my $keys = $_[1];
+    my $i;
+    for ($i=0; $i <= $#$keys; $i++) {
+        my $curVal = $keys->[$i];
+        if( ref $curVal eq 'ARRAY') {
+            processArrayAndRemove($key,$curVal);
+         } elsif ( ref $curVal eq 'HASH' ) {
+            processHashAndRemove($key,$curVal);
+         }
+    }# End For loop
+}# End processArrayAndRemove Subroutine
 
 
 sub processHashAndRemove {
-  my $key = $_[0];
-  my $object = $_[1];
+    my $key = $_[0];
+    my $object = $_[1];
 
-  foreach my $objKey (keys %$object) {
-      my $curVal = $object->{$objKey};
-      if($key eq $objKey ) {
-         delete $object->{$objKey};
-      }
-      elsif( ref $curVal eq 'ARRAY') {
-        processArrayAndRemove($key,$curVal);
-      } elsif( ref $curVal eq 'HASH' ) {
-        processHashAndRemove($key,$curVal);
-      } else {
-         if( $key eq $objKey)  {
-             delete $object->{$objKey};
-         }
-      }
-  }
+    foreach my $objKey (keys %$object) {
+        my $curVal = $object->{$objKey};
+        if($key eq $objKey ) {
+            delete $object->{$objKey};
+        } elsif( ref $curVal eq 'ARRAY') {
+            processArrayAndRemove($key,$curVal);
+        } elsif( ref $curVal eq 'HASH' ) {
+            processHashAndRemove($key,$curVal);
+        } else {
+            if( $key eq $objKey)  {
+                delete $object->{$objKey};
+            }
+        }# End else block
+    }# end foreach
 }
 
-
-
-
+# Root function which will start removing the keys from Perl
+# object
 sub removeKeys {
-  my $key = $_[0];
-  my $object = $_[1];
+    my $key = $_[0];
+    my $object = $_[1];
 
-  foreach my $objKey (keys %$object) {
-      my $curVal = $object->{$objKey};
-      if($key eq $objKey) {
-          delete $object->{$key};
-      }
-      elsif( ref $curVal eq 'ARRAY') {
-        processArrayAndRemove($key,$curVal);
-      } elsif( ref $curVal eq 'HASH' ) {
-        processHashAndRemove($key,$curVal);
-      } else {
-         if($key eq $objKey ) {
-             delete $object->{$key};
-         }
-      }
-  }
-
+    foreach my $objKey (keys %$object) {
+        my $curVal = $object->{$objKey};
+        if($key eq $objKey) {
+            delete $object->{$key};
+        } elsif( ref $curVal eq 'ARRAY') {
+            processArrayAndRemove($key,$curVal);
+        } elsif( ref $curVal eq 'HASH' ) {
+            processHashAndRemove($key,$curVal);
+        } else {
+            if($key eq $objKey ) {
+                delete $object->{$key};
+            }
+        }#end else
+    }# end foreach
 }
 
+
+# Trigger function for removable keys
 sub removeIgnorableKeys {
-  my $keys    =   $_[0];
-  my $object  =   $_[1];
-  
-  my $i;
-  for ($i=0; $i <= $#$keys; $i++) {
-      my $currKey = $keys->[$i];
-      removeKeys($currKey, $object);
-  }
-
+    my $keys    =   $_[0];
+    my $object  =   $_[1];
+    my $i;
+    for ($i=0; $i <= $#$keys; $i++) {
+        my $currKey = $keys->[$i];
+        removeKeys($currKey, $object);
+    }
 }
 
 
-
+# This function is meant to read content from file
+# for transulating the data into perl object.
 sub ReadFile {
-   my $file =$_[0];
-   my $fileContent;
-   open(FH, '<', $file) or die $!;
-
-   while(my $row = <FH>){
-      $fileContent = $fileContent . $row; 
-   }
-
-   close(FH);    
-   return $fileContent;
+    my $file =$_[0];
+    my $fileContent;
+    open(FH, '<', $file) or die $!;
+    while(my $row = <FH>){
+        $fileContent = $fileContent . $row; 
+    }
+    close(FH);    
+    return $fileContent;
 }	
 
 
+# This function to transulare JSON string into
+# perl object.
 sub convertJson2PerlObject{
     my $content = $_[0];
     my $convertedData = decode_json($content);
@@ -112,6 +108,8 @@ sub convertJson2PerlObject{
 
 }
 
+
+# This function will compare baseline files with actual files.
 sub CompareResults {
     my $currModulePath = $_[0];
     my $testcasename = $_[1];
