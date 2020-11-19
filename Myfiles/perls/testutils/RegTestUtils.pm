@@ -13,12 +13,12 @@ my $BASELINE = "Baseline";
 my $ACTUAL   = "Actual";
 my $DATAFILE = ".txt";
 
-
+# Process and iterarte Array and see if any array or hash
+# if so iterate them and remove till the actual key is reached.
 sub processArrayAndRemove {
 
   my $key = $_[0];
   my $keys = $_[1];
-      
   my $i;
   for ($i=0; $i <= $#$keys; $i++) {
       my $curVal = $keys->[$i];
@@ -50,8 +50,6 @@ sub processHashAndRemove {
          }
       }
   }
-
-
 }
 
 
@@ -115,57 +113,56 @@ sub convertJson2PerlObject{
 }
 
 sub CompareResults {
-   my $currModulePath = $_[0];
-   my $testcasename = $_[1];
-   my $arrayRef = $_[2];
-   my $baseLineFile = $currModulePath."/".$BASELINE."/".$testcasename.$DATAFILE;
-   my $actualFile = $currModulePath."/".$ACTUAL."/".$testcasename.$DATAFILE;
-   my $baselineContent = ReadFile($baseLineFile);
-   my $baselineData = convertJson2PerlObject($baselineContent);
-  ################################################
-  print "\n#########BASELINE DUMP Before ##################\n";
-  print  Dumper($baselineData);
-  print "\n########################################\n";
+    my $currModulePath = $_[0];
+    my $testcasename = $_[1];
+    my $arrayRef = $_[2];
+    my $baseLineFile = $currModulePath."/".$BASELINE."/".$testcasename.$DATAFILE;
+    my $actualFile = $currModulePath."/".$ACTUAL."/".$testcasename.$DATAFILE;
+    
+    # Read Data from baseline files
+    my $baselineContent = ReadFile($baseLineFile);
+    
+    # Translate string into perl Object
+    my $baselineData = convertJson2PerlObject($baselineContent);
+    
+    # Remove Ignorable fields from the perl object compariosion.
+    removeIgnorableKeys($arrayRef,$baselineData);
 
-   removeIgnorableKeys($arrayRef,$baselineData);
-   my $identical;
+    my $identical;
+    
+    # Read data from actual response file
+    my $actualContent=ReadFile($actualFile);
+    
+    # Convert string into Perl Object
+    my $actualData = convertJson2PerlObject($actualContent);
+    
+    # Remove ignorable keys from perl object before perl comparision
+    removeIgnorableKeys($arrayRef,$actualData);
 
+    ################################################
+    print "\n#########BASELINE DUMP##################\n";
+    print  Dumper($baselineData);
+    print "\n########################################\n";
 
-  my $actualContent=ReadFile($actualFile);
-  my $actualData = convertJson2PerlObject($actualContent);
+    ################################################
+    print "\n#########ACTUAL DUMP####################\n";
+    print  Dumper($actualData);
+    print "\n########################################\n";
+    
+    # Compare both the results for comparision
+    my $result = new Data::Compare($baselineData,$actualData);
+    if($result->Cmp) {
+        $identical =1;
+     } else {
+        $identical =-1;
+     }
 
+     my @diff = data_diff($baselineData, $actualData);
+     print "\n##########DIFFERENCE####################\n";
+     print Dumper(@diff);
+     print "\n########################################\n";
 
-  removeIgnorableKeys($arrayRef,$actualData);
-
-
-
-  ################################################
-  print "\n#########BASELINE DUMP##################\n";
-  print  Dumper($baselineData);
-  print "\n########################################\n";
-
-  ################################################
-  #print "\n#########ACTUAL DUMP####################\n";
-  #print  Dumper($actualData);
-  #print "\n########################################\n";
-  
-  my $result = new Data::Compare($baselineData,$actualData);
-  #print Dumper($result);
-  #print "\n Compare: $result->Cmp \n";
-  #print Dumper($result->Cmp);
-  if($result->Cmp) {
-    #print "\n Entererd If \n";
-    $identical =1;
-  } else {
-    #print "\n Entered Else \n";
-    $identical =-1;
-  }
-  my @diff = data_diff($baselineData, $actualData);
-  print "\n##########DIFFERENCE####################\n";
-  print Dumper(@diff);
-  print "\n########################################\n";
-
-   return $identical;
+     return $identical;
 }   
 
 1;
